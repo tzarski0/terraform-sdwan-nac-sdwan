@@ -350,6 +350,45 @@ resource "sdwan_system_mrf_profile_parcel" "system_mrf_profile_parcel" {
   secondary_region_id_variable = try("{{${each.value.mrf.secondary_region_id_variable}}}", null)
 }
 
+resource "sdwan_system_ntp_profile_parcel" "system_ntp_profile_parcel" {
+  for_each = {
+    for sys in try(local.feature_profiles.system_profiles, {}) :
+    "${sys.name}-ntp" => sys
+    if lookup(sys, "ntp", null) != null
+  }
+  name               = each.value.ntp.name
+  description        = try(each.value.ntp.description, null)
+  feature_profile_id = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
+  authentication_keys = try(length(each.value.ntp.authentication_keys) == 0, true) ? null : [for key in each.value.ntp.authentication_keys : {
+    key_id             = try(key.id, null)
+    key_id_variable    = try("{{${key.id_variable}}}", null)
+    md5_value          = try(key.md5_value, null)
+    md5_value_variable = try("{{${key.md5_value_variable}}}", null)
+  }]
+  authoritative_ntp_server          = try(each.value.ntp.authoritative_ntp_server, null)
+  authoritative_ntp_server_variable = try("{{${each.value.ntp.authoritative_ntp_server_variable}}}", null)
+  servers = try(length(each.value.ntp.servers) == 0, true) ? null : [for server in each.value.ntp.servers : {
+    authentication_key              = try(server.authentication_key, null)
+    authentication_key_variable     = try("{{${server.authentication_key_variable}}}", null)
+    hostname_ip_address             = try(server.hostname_ip, null)
+    hostname_ip_address_variable    = try("{{${server.hostname_ip_variable}}}", null)
+    ntp_version                     = try(server.ntp_version, null)
+    ntp_version_variable            = try("{{${server.ntp_version_variable}}}", null)
+    prefer_this_ntp_server          = try(server.prefer, null)
+    prefer_this_ntp_server_variable = try("{{${server.prefer_variable}}}", null)
+    source_interface                = try(server.source_interface, null)
+    source_interface_variable       = try("{{${server.source_interface_variable}}}", null)
+    vpn                             = try(server.vpn_id, null)
+    vpn_variable                    = try("{{${server.vpn_id_variable}}}", null)
+  }]
+  source_interface          = try(each.value.ntp.authoritative_ntp_server_source_interface, null)
+  source_interface_variable = try("{{${each.value.ntp.authoritative_ntp_server_source_interface_variable}}}", null)
+  stratum                   = try(each.value.ntp.authoritative_ntp_server_stratum, null)
+  stratum_variable          = try("{{${each.value.ntp.authoritative_ntp_server_stratum_variable}}}", null)
+  trusted_keys              = try(each.value.ntp.trusted_keys, null)
+  trusted_keys_variable     = try("{{${each.value.ntp.trusted_keys_variable}}}", null)
+}
+
 resource "sdwan_system_omp_profile_parcel" "system_omp_profile_parcel" {
   for_each = {
     for sys in try(local.feature_profiles.system_profiles, {}) :
