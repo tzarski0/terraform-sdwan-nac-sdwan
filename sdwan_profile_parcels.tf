@@ -275,6 +275,63 @@ resource "sdwan_system_global_profile_parcel" "system_global_profile_parcel" {
   vty_line_logging_variable     = try("{{${each.value.global.vty_line_logging_variable}}}", null)
 }
 
+resource "sdwan_system_logging_profile_parcel" "system_logging_profile_parcel" {
+  for_each = {
+    for sys in try(local.feature_profiles.system_profiles, {}) :
+    "${sys.name}-logging" => sys
+    if lookup(sys, "logging", null) != null
+  }
+  name                      = each.value.logging.name
+  description               = try(each.value.logging.description, null)
+  feature_profile_id        = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
+  disk_enable               = try(each.value.logging.disk_enable, null)
+  disk_enable_variable      = try("{{${each.value.logging.disk_enable_variable}}}", null)
+  disk_file_rotate          = try(each.value.logging.disk_file_rotate, null)
+  disk_file_rotate_variable = try("{{${each.value.logging.disk_file_rotate_variable}}}", null)
+  disk_file_size            = try(each.value.logging.disk_file_size, null)
+  disk_file_size_variable   = try("{{${each.value.logging.disk_file_size_variable}}}", null)
+  ipv4_servers = try(length(each.value.logging.ipv4_servers) == 0, true) ? null : [for server in each.value.logging.ipv4_servers : {
+    hostname_ip                            = try(server.hostname_ip, null)
+    hostname_ip_variable                   = try("{{${server.hostname_ip_variable}}}", null)
+    priority                               = try(server.severity, null)
+    priority_variable                      = try("{{${server.severity_variable}}}", null)
+    source_interface                       = try(server.source_interface, null)
+    source_interface_variable              = try("{{${server.source_interface_variable}}}", null)
+    tls_enable                             = try(server.tls_enable, null)
+    tls_enable_variable                    = try("{{${server.tls_enable_variable}}}", null)
+    tls_properties_custom_profile          = try(server.tls_properties_custom_profile, null)
+    tls_properties_custom_profile_variable = try("{{${server.tls_properties_custom_profile_variable}}}", null)
+    tls_properties_profile                 = try(server.tls_properties_profile, null)
+    tls_properties_profile_variable        = try("{{${server.tls_properties_profile_variable}}}", null)
+    vpn                                    = try(server.vpn_id, null)
+    vpn_variable                           = try("{{${server.vpn_id_variable}}}", null)
+  }]
+  ipv6_servers = try(length(each.value.logging.ipv6_servers) == 0, true) ? null : [for server in each.value.logging.ipv6_servers : {
+    hostname_ip                            = try(server.hostname_ip, null)
+    hostname_ip_variable                   = try("{{${server.hostname_ip_variable}}}", null)
+    priority                               = try(server.severity, null)
+    priority_variable                      = try("{{${server.severity_variable}}}", null)
+    source_interface                       = try(server.source_interface, null)
+    source_interface_variable              = try("{{${server.source_interface_variable}}}", null)
+    tls_enable                             = try(server.tls_enable, null)
+    tls_enable_variable                    = try("{{${server.tls_enable_variable}}}", null)
+    tls_properties_custom_profile          = try(server.tls_properties_custom_profile, null)
+    tls_properties_custom_profile_variable = try("{{${server.tls_properties_custom_profile_variable}}}", null)
+    tls_properties_profile                 = try(server.tls_properties_profile, null)
+    tls_properties_profile_variable        = try("{{${server.tls_properties_profile_variable}}}", null)
+    vpn                                    = try(server.vpn_id, null)
+    vpn_variable                           = try("{{${server.vpn_id_variable}}}", null)
+  }]
+  tls_profiles = try(length(each.value.logging.tls_profiles) == 0, true) ? null : [for profile in each.value.logging.tls_profiles : {
+    cipher_suites          = try(profile.cipher_suites, null)
+    cipher_suites_variable = try("{{${profile.cipher_suites_variable}}}", null)
+    profile                = try(profile.name, null)
+    profile_variable       = try("{{${profile.name_variable}}}", null)
+    tls_version            = try(profile.tls_version, null)
+    tls_version_variable   = try("{{${profile.tls_version_variable}}}", null)
+  }]
+}
+
 resource "sdwan_system_mrf_profile_parcel" "system_mrf_profile_parcel" {
   for_each = {
     for sys in try(local.feature_profiles.system_profiles, {}) :
