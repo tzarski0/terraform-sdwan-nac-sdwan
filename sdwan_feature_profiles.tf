@@ -9,3 +9,9 @@ resource "sdwan_system_feature_profile" "system_feature_profile" {
   name        = each.value.name
   description = try(each.value.description, "")
 }
+
+resource "sdwan_transport_feature_profile" "transport_feature_profile" {
+  for_each    = { for t in try(local.feature_profiles.transport_profiles, {}) : t.name => t }
+  name        = each.value.name
+  description = try(each.value.description, "")
+}
