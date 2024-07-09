@@ -4,7 +4,7 @@ resource "sdwan_cli_config_profile_parcel" "cli_config_profile_parcel" {
     "${cli.name}-config" => cli
     if try(cli.config, null) != null
   }
-  name               = try(each.value.config.name, "${each.value.name}-config")
+  name               = try(each.value.config.name, "config")
   description        = try(each.value.config.description, "")
   feature_profile_id = sdwan_cli_feature_profile.cli_feature_profile[each.value.name].id
   cli_configuration  = each.value.config.cli_configuration
@@ -16,7 +16,7 @@ resource "sdwan_system_aaa_profile_parcel" "system_aaa_profile_parcel" {
     "${sys.name}-aaa" => sys
     if try(sys.aaa, null) != null
   }
-  name                      = try(each.value.aaa.name, "${each.value.name}-aaa")
+  name                      = try(each.value.aaa.name, "aaa")
   description               = try(each.value.aaa.description, null)
   feature_profile_id        = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   accounting_group          = try(each.value.aaa.dot1x_accounting, null)
@@ -100,7 +100,7 @@ resource "sdwan_system_banner_profile_parcel" "system_banner_profile_parcel" {
     "${sys.name}-banner" => sys
     if try(sys.banner, null) != null
   }
-  name               = try(each.value.banner.name, "${each.value.name}-banner")
+  name               = try(each.value.banner.name, "banner")
   description        = try(each.value.banner.description, null)
   feature_profile_id = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   login              = try(each.value.banner.login, null)
@@ -115,7 +115,7 @@ resource "sdwan_system_basic_profile_parcel" "system_basic_profile_parcel" {
     "${sys.name}-basic" => sys
     if lookup(sys, "basic", null) != null
   }
-  name                                = each.value.basic.name
+  name                                = try(each.value.basic.name, "basic")
   description                         = try(each.value.basic.description, null)
   feature_profile_id                  = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   admin_tech_on_failure               = try(each.value.basic.admin_tech_on_failure, null)
@@ -194,7 +194,7 @@ resource "sdwan_system_bfd_profile_parcel" "system_bfd_profile_parcel" {
     "${sys.name}-bfd" => sys
     if try(sys.bfd, null) != null
   }
-  name               = try(each.value.bfd.name, "${each.value.name}-bfd")
+  name               = try(each.value.bfd.name, "bfd")
   description        = try(each.value.bfd.description, null)
   feature_profile_id = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   colors = try(length(each.value.bfd.colors) == 0, true) ? null : [for c in each.value.bfd.colors : {
@@ -223,7 +223,7 @@ resource "sdwan_system_flexible_port_speed_profile_parcel" "system_flexible_port
     "${sys.name}-flexible_port_speed" => sys
     if try(sys.flexible_port_speed, null) != null
   }
-  name               = try(each.value.flexible_port_speed.name, "${each.value.name}-flexible_port_speed")
+  name               = try(each.value.flexible_port_speed.name, "flexible_port_speed")
   description        = try(each.value.flexible_port_speed.description, null)
   feature_profile_id = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   port_type          = try(each.value.flexible_port_speed.port_type, null)
@@ -236,7 +236,7 @@ resource "sdwan_system_global_profile_parcel" "system_global_profile_parcel" {
     "${sys.name}-global" => sys
     if try(sys.global, null) != null
   }
-  name                          = try(each.value.global.name, "${each.value.name}-global")
+  name                          = try(each.value.global.name, "global")
   description                   = try(each.value.global.description, null)
   feature_profile_id            = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   arp_proxy                     = try(each.value.global.arp_proxy, null)
@@ -293,7 +293,7 @@ resource "sdwan_system_logging_profile_parcel" "system_logging_profile_parcel" {
     "${sys.name}-logging" => sys
     if try(sys.logging, null) != null
   }
-  name                      = try(each.value.logging.name, "${each.value.name}-logging")
+  name                      = try(each.value.logging.name, "logging")
   description               = try(each.value.logging.description, null)
   feature_profile_id        = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   disk_file_rotate          = try(each.value.logging.disk_file_rotate, null)
@@ -342,13 +342,68 @@ resource "sdwan_system_logging_profile_parcel" "system_logging_profile_parcel" {
   }]
 }
 
+resource "sdwan_transport_management_vpn_profile_parcel" "transport_management_vpn_profile_parcel" {
+  for_each = {
+    for transport in try(local.feature_profiles.transport_profiles, {}) :
+    "${transport.name}-management_vpn" => transport
+    if try(transport.management_vpn, null) != null
+  }
+  name               = try(each.value.management_vpn.name, "management_vpn")
+  description        = try(each.value.management_vpn.description, null)
+  feature_profile_id = sdwan_transport_feature_profile.transport_feature_profile[each.value.name].id
+  ipv4_static_routes = try(length(each.value.management_vpn.ipv4_static_routes) == 0, true) ? null : [for route in each.value.management_vpn.ipv4_static_routes : {
+    administrative_distance          = try(route.administrative_distance, null)
+    administrative_distance_variable = try("{{${route.administrative_distance_variable}}}", null)
+    gateway                          = try(route.gateway, "nextHop")
+    network_address                  = try(route.network_address, null)
+    network_address_variable         = try("{{${route.network_address_variable}}}", null)
+    next_hops = try(length(route.next_hops) == 0, true) ? null : [for nh in route.next_hops : {
+      address                          = try(nh.address, null)
+      address_variable                 = try("{{${nh.address_variable}}}", null)
+      administrative_distance          = try(nh.administrative_distance, null)
+      administrative_distance_variable = try("{{${nh.administative_distance_variable}}}", null)
+    }]
+    subnet_mask          = try(route.subnet_mask, null)
+    subnet_mask_variable = try("{{${route.subnet_mask_variable}}}", null)
+  }]
+  ipv6_static_routes = try(length(each.value.management_vpn.ipv6_static_routes) == 0, true) ? null : [for route in each.value.management_vpn.ipv6_static_routes : {
+    nat          = try(route.nat, null)
+    nat_variable = try("{{${route.nat_variable}}}", null)
+    next_hops = try(length(route.next_hops) == 0, true) ? null : [for nh in route.next_hops : {
+      address                          = try(nh.address, null)
+      address_variable                 = try("{{${nh.address_variable}}}", null)
+      administrative_distance          = try(nh.administrative_distance, null)
+      administrative_distance_variable = try("{{${nh.administative_distance_variable}}}", null)
+    }]
+    null0           = try(route.null0, null)
+    prefix          = try(route.prefix, null)
+    prefix_variable = try("{{${route.prefix_variable}}}", null)
+  }]
+  new_host_mappings = try(length(each.value.management_vpn.host_mappings) == 0, true) ? null : [for host in each.value.management_vpn.host_mappings : {
+    host_name                     = try(host.hostname, null)
+    host_name_variable            = try("{{${host.hostname_variable}}}", null)
+    list_of_ip_addresses          = try(host.ips, null)
+    list_of_ip_addresses_variable = try("{{${host.ips_variable}}}", null)
+  }]
+  primary_dns_address_ipv4            = try(each.value.management_vpn.ipv4_primary_dns_address, null)
+  primary_dns_address_ipv4_variable   = try("{{${each.value.management_vpn.ipv4_primary_dns_address_variable}}}", null)
+  primary_dns_address_ipv6            = try(each.value.management_vpn.ipv6_primary_dns_address, null)
+  primary_dns_address_ipv6_variable   = try("{{${each.value.management_vpn.ipv6_primary_dns_address_variable}}}", null)
+  secondary_dns_address_ipv4          = try(each.value.management_vpn.ipv4_secondary_dns_address, null)
+  secondary_dns_address_ipv4_variable = try("{{${each.value.management_vpn.ipv4_secondary_dns_address_variable}}}", null)
+  secondary_dns_address_ipv6          = try(each.value.management_vpn.ipv6_secondary_dns_address, null)
+  secondary_dns_address_ipv6_variable = try("{{${each.value.management_vpn.ipv6_secondary_dns_address_variable}}}", null)
+  vpn_description                     = try(each.value.management_vpn.vpn_description, null)
+  vpn_description_variable            = try("{{${each.value.management_vpn.vpn_description_variable}}}", null)
+}
+
 resource "sdwan_system_mrf_profile_parcel" "system_mrf_profile_parcel" {
   for_each = {
     for sys in try(local.feature_profiles.system_profiles, {}) :
     "${sys.name}-mrf" => sys
     if try(sys.mrf, null) != null
   }
-  name                         = try(each.value.mrf.name, "${each.value.name}-mrf")
+  name                         = try(each.value.mrf.name, "mrf")
   description                  = try(each.value.mrf.description, null)
   feature_profile_id           = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   enable_migration_to_mrf      = try(each.value.mrf.migration_to_mrf, null)
@@ -366,7 +421,7 @@ resource "sdwan_system_ntp_profile_parcel" "system_ntp_profile_parcel" {
     "${sys.name}-ntp" => sys
     if try(sys.ntp, null) != null
   }
-  name               = try(each.value.ntp.name, "${each.value.name}-ntp")
+  name               = try(each.value.ntp.name, "ntp")
   description        = try(each.value.ntp.description, null)
   feature_profile_id = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   authentication_keys = try(length(each.value.ntp.authentication_keys) == 0, true) ? null : [for key in each.value.ntp.authentication_keys : {
@@ -405,7 +460,7 @@ resource "sdwan_system_omp_profile_parcel" "system_omp_profile_parcel" {
     "${sys.name}-omp" => sys
     if lookup(sys, "omp", null) != null
   }
-  name                                 = each.value.omp.name
+  name                                 = try(each.value.omp.name, "omp")
   description                          = try(each.value.omp.description, null)
   feature_profile_id                   = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   advertise_ipv4_bgp                   = try(each.value.omp.advertise_ipv4_bgp, null)
@@ -474,7 +529,7 @@ resource "sdwan_system_performance_monitoring_profile_parcel" "system_performanc
     "${sys.name}-performance_monitoring" => sys
     if lookup(sys, "performance_monitoring", null) != null
   }
-  name                        = each.value.performance_monitoring.name
+  name                        = try(each.value.performance_monitoring.name, "performance_monitoring")
   description                 = try(each.value.performance_monitoring.description, null)
   feature_profile_id          = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   app_perf_monitor_app_group  = try(each.value.performance_monitoring.app_perf_monitor_app_groups, null)
@@ -491,7 +546,7 @@ resource "sdwan_system_security_profile_parcel" "system_security_profile_parcel"
     "${sys.name}-security" => sys
     if lookup(sys, "security", null) != null
   }
-  name                                 = each.value.security.name
+  name                                 = try(each.value.security.name, "security")
   description                          = try(each.value.security.description, null)
   feature_profile_id                   = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   anti_replay_window                   = try(each.value.security.anti_replay_window, null)
@@ -543,7 +598,7 @@ resource "sdwan_system_snmp_profile_parcel" "system_snmp_profile_parcel" {
     "${sys.name}-snmp" => sys
     if lookup(sys, "snmp", null) != null
   }
-  name               = each.value.snmp.name
+  name               = try(each.value.snmp.name, "snmp")
   description        = try(each.value.snmp.description, null)
   feature_profile_id = sdwan_system_feature_profile.system_feature_profile[each.value.name].id
   communities = try(length(each.value.snmp.communities) == 0, true) ? null : [for c in each.value.snmp.communities : {
