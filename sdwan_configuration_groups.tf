@@ -17,4 +17,15 @@ resource "sdwan_configuration_group" "configuration_group" {
       id = sdwan_transport_feature_profile.transport_feature_profile[each.value.transport_profile].id
     }],
   ])
+  topology_site_devices = try(length(each.value.topology_devices), null)
+  topology_devices = try(length(each.value.topology_devices) == 0, true) ? null : [for device in each.value.topology_devices : {
+    criteria_attribute = "tag"
+    criteria_value     = device.tag
+    unsupported_features = flatten([
+      for feature in try(device.unsupported_basic_features, []) : {
+        parcel_type = "wan/vpn/interface/ethernet"
+        parcel_id   = sdwan_system_basic_profile_parcel.system_basic_profile_parcel["${each.value.system_profile}-${feature}"].id
+      }
+    ]),
+  }]
 }
